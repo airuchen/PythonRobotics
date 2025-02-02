@@ -12,6 +12,7 @@ sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 from math import sin, cos, atan2, sqrt, acos, pi, hypot
 import numpy as np
 from utils.angle import angle_mod, rot_mat_2d
+import matplotlib.pyplot as plt
 
 show_animation = True
 
@@ -95,7 +96,7 @@ def plan_dubins_path(s_x, s_y, s_yaw, g_x, g_y, g_yaw, curvature,
 
     lp_x, lp_y, lp_yaw, modes, lengths = _dubins_path_planning_from_origin(
         local_goal_x, local_goal_y, local_goal_yaw, curvature, step_size,
-        planning_funcs)
+        planning_funcs, s_x, s_y, s_yaw)
 
     # Convert a local coordinate path to the global coordinate
     rot = rot_mat_2d(-s_yaw)
@@ -201,7 +202,7 @@ _PATH_TYPE_MAP = {"LSL": _LSL, "RSR": _RSR, "LSR": _LSR, "RSL": _RSL,
 
 
 def _dubins_path_planning_from_origin(end_x, end_y, end_yaw, curvature,
-                                      step_size, planning_funcs):
+                                      step_size, planning_funcs, s_x, s_y, s_yaw):
     dx = end_x
     dy = end_y
     d = hypot(dx, dy) * curvature
@@ -221,6 +222,14 @@ def _dubins_path_planning_from_origin(end_x, end_y, end_yaw, curvature,
         cost = (abs(d1) + abs(d2) + abs(d3))
         if best_cost > cost:  # Select minimum length one.
             b_d1, b_d2, b_d3, b_mode, best_cost = d1, d2, d3, mode, cost
+
+        # Draw each path with different color
+        local_x_list, local_y_list, local_yaw_list = _generate_local_course([d1, d2, d3], mode, curvature, step_size)
+        rot = rot_mat_2d(-s_yaw)
+        converted_xy = np.stack([local_x_list, local_y_list]).T @ rot
+        x_list = converted_xy[:, 0] + s_x
+        y_list = converted_xy[:, 1] + s_y
+        plt.plot(x_list, y_list, label="".join(mode))
 
     lengths = [b_d1, b_d2, b_d3]
     x_list, y_list, yaw_list = _generate_local_course(lengths, b_mode,
@@ -280,38 +289,37 @@ def _generate_local_course(lengths, modes, max_curvature, step_size):
     return p_x, p_y, p_yaw
 
 
-def main():
-    print("Dubins path planner sample start!!")
-    import matplotlib.pyplot as plt
-    from utils.plot import plot_arrow
+# def main():
+#     print("Dubins path planner sample start!!")
+#     from utils.plot import plot_arrow
 
-    start_x = 1.0  # [m]
-    start_y = 1.0  # [m]
-    start_yaw = np.deg2rad(45.0)  # [rad]
+#     start_x = 1.0  # [m]
+#     start_y = 1.0  # [m]
+#     start_yaw = np.deg2rad(45.0)  # [rad]
 
-    end_x = -3.0  # [m]
-    end_y = -3.0  # [m]
-    end_yaw = np.deg2rad(-45.0)  # [rad]
+#     end_x = -3.0  # [m]
+#     end_y = -3.0  # [m]
+#     end_yaw = np.deg2rad(-45.0)  # [rad]
 
-    curvature = 1.0
+#     curvature = 1.0
 
-    path_x, path_y, path_yaw, mode, lengths = plan_dubins_path(start_x,
-                                                               start_y,
-                                                               start_yaw,
-                                                               end_x,
-                                                               end_y,
-                                                               end_yaw,
-                                                               curvature)
+#     path_x, path_y, path_yaw, mode, lengths = plan_dubins_path(start_x,
+#                                                                start_y,
+#                                                                start_yaw,
+#                                                                end_x,
+#                                                                end_y,
+#                                                                end_yaw,
+#                                                                curvature)
 
-    if show_animation:
-        plt.plot(path_x, path_y, label="".join(mode))
-        plot_arrow(start_x, start_y, start_yaw)
-        plot_arrow(end_x, end_y, end_yaw)
-        plt.legend()
-        plt.grid(True)
-        plt.axis("equal")
-        plt.show()
+#     if show_animation:
+#         plt.plot(path_x, path_y, label="".join(mode))
+#         plot_arrow(start_x, start_y, start_yaw)
+#         plot_arrow(end_x, end_y, end_yaw)
+#         plt.legend()
+#         plt.grid(True)
+#         plt.axis("equal")
+#         plt.show()
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
